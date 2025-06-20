@@ -1,729 +1,388 @@
-# 📊 Dashboard Tài Chính & Chứng Khoán Việt Nam
+# Bảng Điều Khiển Tài Chính và Chứng Khoán Việt Nam
 
-> Ứng dụng web hiển thị dữ liệu chứng khoán real-time với FastAPI backend và frontend tương tác cao
+Ứng dụng web hiển thị dữ liệu chứng khoán trực tuyến với máy chủ FastAPI và giao diện tương tác cao
 
-## 🌟 Tổng Quan Dự Án
 
-**Financial Dashboard** là một ứng dụng web full-stack được xây dựng để hiển thị dữ liệu chứng khoán Việt Nam với hiệu suất cao và giao diện người dùng modern. Dự án tích hợp **VNStock API**, **Redis caching**, và **Plotly** để tạo ra trải nghiệm người dùng mượt mà với thời gian load **dưới 300ms**.
+### Điểm Nổi Bật
 
-### 🎯 **Điểm Nổi Bật**
-- ⚡ **Hiệu suất cao**: 93-94% faster với Redis caching
-- 📱 **Responsive Design**: Mobile-first với dark mode
-- 📊 **Interactive Charts**: Plotly.js candlestick & real-time data
-- 🔄 **Real-time Updates**: WebSocket cho dữ liệu live
-- 🚀 **Modern Stack**: FastAPI + Jinja2 + Redis + Plotly
+- Hiệu suất cao: nhanh hơn 93-94% với bộ nhớ đệm Redis
+- Thiết kế đáp ứng: ưu tiên thiết bị di động với chế độ tối
+- Biểu đồ tương tác: nến Plotly.js và dữ liệu trực tuyến
+- Cập nhật trực tuyến: WebSocket cho dữ liệu sống
+- Ngăn xếp hiện đại: FastAPI + Jinja2 + Redis + Plotly
+- Ứng dụng một trang: điều hướng không tải lại trang
 
-## 🏗️ Kiến Trúc Hệ Thống
+## Kiến Trúc Hệ Thống
 
-### **Tech Stack Overview**
+### Tổng Quan Ngăn Xếp Công Nghệ
 
-```mermaid
-graph TB
-    A[Frontend Layer] --> B[Backend API Layer]
-    B --> C[Cache Layer - Redis]
-    B --> D[Data Source - VNStock API]
-    
-    A1[HTML/CSS/JS] --> A
-    A2[Plotly.js Charts] --> A
-    A3[Responsive UI] --> A
-    
-    B1[FastAPI Framework] --> B
-    B2[Async/Await] --> B
-    B3[Jinja2 Templates] --> B
-    
-    C1[Redis Cache] --> C
-    C2[TTL Strategy] --> C
-    
-    D1[VNStock API] --> D
-    D2[Financial Data] --> D
-```
+Hệ thống được chia thành 4 lớp chính:
 
-### **Performance Architecture**
+**Lớp Giao Diện**: HTML/CSS/JavaScript, Biểu đồ Plotly.js, Giao diện đáp ứng
+**Lớp Giao Diện Lập Trình Ứng Dụng Máy Chủ**: Khung FastAPI, Bất đồng bộ/Chờ đợi, Mẫu Jinja2  
+**Lớp Bộ Nhớ Đệm**: Bộ nhớ đệm Redis với Chiến lược Thời gian sống
+**Nguồn Dữ Liệu**: Giao diện lập trình ứng dụng VNStock và Dữ liệu Tài chính
 
-| Layer | Technology | Response Time | Cache Strategy |
+### Kiến Trúc Hiệu Suất
+
+| Lớp | Công Nghệ | Thời Gian Phản Hồi | Chiến Lược Bộ Nhớ Đệm |
 |-------|------------|---------------|----------------|
-| **Frontend** | HTML/CSS/JS, Plotly.js | < 100ms | Browser cache, lazy loading |
-| **API Layer** | FastAPI, Async/Await | 150-200ms | Redis L2 cache |
-| **Data Source** | VNStock API | 2-3s (uncached) | 30min - 2hr TTL |
+| Giao diện | HTML/CSS/JavaScript, Plotly.js | dưới 100 mili giây | Bộ nhớ đệm trình duyệt, tải lười |
+| Lớp Giao Diện Lập Trình | FastAPI, Bất đồng bộ/Chờ đợi | 150-200 mili giây | Bộ nhớ đệm Redis lớp 2 |
+| Nguồn Dữ Liệu | Giao diện lập trình ứng dụng VNStock | 2-3 giây (không có bộ nhớ đệm) | Thời gian sống 30 phút - 2 giờ |
 
-## 📁 Cấu Trúc Dự Án
+## Cấu Trúc Dự Án
 
 ```
 CSDL_FIXV1_backup/
-├── 📄 main.py                    # FastAPI application entry point
-├── 📄 requirements.txt           # Python dependencies
-├── 📁 app/                       # Backend logic
-│   ├── 📄 cache_manager.py       # Redis cache implementation
-│   ├── 📁 controllers/           # FastAPI route handlers
-│   ├── 📁 services/              # Business logic & data processing
-│   ├── 📁 models/                # Data models & schemas
-│   └── 📄 config.py              # Application configuration
-├── 📁 templates/                 # Jinja2 HTML templates
-│   ├── 📄 base.html              # Base template với common layout
-│   ├── 📄 index.html             # Trang chủ dashboard
-│   ├── 📄 stock.html             # Chi tiết cổ phiếu với charts
-│   ├── 📄 priceboard.html        # Bảng giá real-time
-│   ├── 📄 information.html       # Báo cáo tài chính
-│   └── 📄 analytics.html         # PowerBI analytics
-└── 📁 static/                    # Frontend assets
-    ├── 📁 css/                   # Responsive stylesheets
-    │   ├── style.css             # Global styles với CSS variables
-    │   ├── stock.css             # Stock page specific styles
-    │   ├── priceboard.css        # Dashboard styles với dark mode
-    │   └── bieu_do_tron.css      # Chart specific styles
-    ├── 📁 js/                    # JavaScript modules
-    │   ├── main.js               # Core functionality
-    │   ├── stock.js              # Stock page interactions
-    │   └── charts.js             # Chart configurations
-    └── 📁 images/                # Static images & icons
+├── main.py                    # Điểm khởi đầu ứng dụng FastAPI
+├── requirements.txt           # Các gói phụ thuộc Python
+├── app/                       # Logic máy chủ
+│   ├── cache_manager.py       # Triển khai bộ nhớ đệm Redis
+│   ├── controllers/           # Xử lý tuyến đường FastAPI
+│   ├── services/              # Logic nghiệp vụ và xử lý dữ liệu
+│   ├── models/                # Mô hình dữ liệu và lược đồ
+│   └── config.py              # Cấu hình ứng dụng
+├── templates/                 # Mẫu HTML Jinja2
+│   ├── base.html              # Mẫu cơ sở với bố cục chung
+│   ├── priceboard.html        # Bảng giá trực tuyến
+│   ├── information.html       # Báo cáo tài chính
+│   ├── analytics.html         # Phân tích PowerBI
+│   ├── report.html            # Báo cáo và đánh giá
+│   └── stock.html             # Chi tiết cổ phiếu với biểu đồ
+└── static/                    # Tài sản giao diện
+    ├── css/                   # Bảng kiểu đáp ứng
+    │   ├── style.css          # Kiểu toàn cục với biến CSS
+    │   ├── stock.css          # Kiểu riêng cho trang cổ phiếu
+    │   ├── priceboard.css     # Kiểu bảng điều khiển với chế độ tối
+    │   └── bieu_do_tron.css   # Kiểu riêng cho biểu đồ
+    └── js/                    # Các mô-đun JavaScript
+        ├── main.js            # Chức năng cốt lõi
+        ├── stock.js           # Tương tác trang cổ phiếu
+        └── charts.js          # Cấu hình biểu đồ
 ```
 
-## 🚀 Quick Start cho Frontend Developers
+## Hướng Dẫn Cài Đặt và Chạy Ứng Dụng
 
-### **1. Khởi chạy Development Environment**
+### Bước 1: Chuẩn Bị Môi Trường
 
-```bash
-# Clone và setup
-git clone <repository>
-cd CSDL_FIXV1_backup
+1. Sao chép kho lưu trữ và di chuyển vào thư mục dự án
+2. Đảm bảo Python 3.8+ đã được cài đặt
+3. Cài đặt máy chủ Redis (tùy chọn, có thể chạy mà không cần Redis)
 
-# Cài đặt dependencies
+### Bước 2: Cài Đặt Các Gói Phụ Thuộc
+
+Cài đặt các gói Python cần thiết:
+```
 pip install -r requirements.txt
+```
 
-# Khởi chạy server (với hot reload)
+### Bước 3: Khởi Chạy Máy Chủ
+
+Chạy máy chủ phát triển với tải lại nóng:
+```
 python main.py
-# hoặc: uvicorn main:app --reload --port 8000
-
-# Truy cập ứng dụng
-# http://localhost:8000
 ```
 
-### **2. Development URLs**
-
+Hoặc sử dụng uvicorn:
 ```
-🏠 Homepage (Stock Dashboard):     http://localhost:8000/
-📊 Priceboard (Main Dashboard):    http://localhost:8000/priceboard  
-📈 Stock Details:                 http://localhost:8000/stock?bank_code=VCB
-📋 Financial Reports:             http://localhost:8000/information
-📊 Analytics (PowerBI):           http://localhost:8000/analytics
-🔍 API Documentation:             http://localhost:8000/docs
+uvicorn main:app --reload --port 8000
 ```
 
-## 🎨 Frontend Architecture & UI Components
+### Bước 4: Truy Cập Ứng Dụng
 
-### **Template System - Jinja2 Inheritance**
+Máy chủ sẽ chạy trên địa chỉ: http://localhost:8000
 
-#### **Base Template Structure:**
-```html
-<!-- base.html - Master template -->
-<!DOCTYPE html>
-<html lang="{% block lang %}vi{% endblock %}">
-<head>
-    <title>{% block title %}Dashboard Finance{% endblock %}</title>
-    <!-- Common CSS variables & fonts -->
-    <link rel="stylesheet" href="/static/css/style.css">
-    {% block extra_css %}{% endblock %}
-</head>
-<body>
-    <!-- Header với navigation & dark mode toggle -->
-    <header class="header">
-        <nav class="navbar"><!-- Navigation menu --></nav>
-    </header>
-    
-    <!-- Sidebar cho mobile -->
-    <aside class="sidebar"><!-- Navigation sidebar --></aside>
-    
-    <!-- Main content area -->
-    <main class="main-content">
-        {% block main_content %}{% endblock %}
-    </main>
-    
-    <!-- Common JavaScript -->
-    <script src="/static/js/main.js"></script>
-    {% block extra_scripts %}{% endblock %}
-</body>
-</html>
-```
+## Các Trang Chính của Ứng Dụng
 
-#### **Page Templates:**
-```html
-<!-- stock.html - Stock details page -->
-{% extends "base.html" %}
+### Trang Chủ (Bảng Giá)
+- **Địa chỉ**: http://localhost:8000/ hoặc http://localhost:8000/priceboard
+- **Mô tả**: Hiển thị tổng quan thị trường chứng khoán
+- **Nội dung**: Chỉ số thị trường, Sơ đồ cây vốn hóa, Biểu đồ tròn tài chính, Bảng giá trực tuyến, Tin tức
 
-{% block title %}Thông tin {{ stock_symbol }} - Dashboard{% endblock %}
+### Trang Chi Tiết Cổ Phiếu  
+- **Địa chỉ**: http://localhost:8000/stock?bank_code=VCB
+- **Mô tả**: Thông tin chi tiết về từng mã cổ phiếu
+- **Nội dung**: Hồ sơ công ty, Biểu đồ giá, Cơ cấu cổ đông, Ban lãnh đạo
 
-{% block extra_css %}
-<link rel="stylesheet" href="/static/css/stock.css">
-{% endblock %}
+### Trang Báo Cáo Tài Chính
+- **Địa chỉ**: http://localhost:8000/information  
+- **Mô tả**: Biểu mẫu lựa chọn mã cổ phiếu và loại báo cáo
+- **Nội dung**: Hiển thị dữ liệu dạng bảng với khả năng xuất Excel
 
-{% block main_content %}
-<div class="stock-container">
-    <!-- Stock info cards -->
-    <!-- Interactive Plotly charts -->
-    <!-- Data tables với conditional formatting -->
-</div>
-{% endblock %}
+### Trang Báo Cáo và Đánh Giá
+- **Địa chỉ**: http://localhost:8000/report
+- **Mô tả**: Tích hợp khung nội tuyến PowerBI hiển thị báo cáo chỉ số hiệu suất chính
+- **Nội dung**: Bảng điều khiển chỉ số hiệu suất chính và các chỉ số đánh giá
 
-{% block extra_scripts %}
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-<script src="/static/js/stock.js"></script>
-{% endblock %}
-```
+### Trang Phân Tích PowerBI
+- **Địa chỉ**: http://localhost:8000/analytics
+- **Mô tả**: Tích hợp khung nội tuyến PowerBI cho phân tích dữ liệu tài chính  
+- **Nội dung**: Phân tích chuyên sâu và trí tuệ kinh doanh
 
-### **CSS Architecture - Design System**
+### Tài Liệu Giao Diện Lập Trình Ứng Dụng
+- **Địa chỉ**: http://localhost:8000/docs
+- **Mô tả**: Giao diện người dùng Swagger tự động sinh từ FastAPI
+- **Nội dung**: Tài liệu giao diện lập trình ứng dụng tương tác
 
-#### **CSS Variables (Design Tokens):**
-```css
-/* style.css - Global design system */
-:root {
-    /* Colors */
-    --color-primary: #007bff;
-    --color-success: #28a745;    /* Positive changes */
-    --color-danger: #dc3545;     /* Negative changes */
-    --color-warning: #ffc107;
-    --color-info: #17a2b8;
-    
-    /* Typography */
-    --font-family: 'Segoe UI', Tahoma, sans-serif;
-    --font-size-base: 0.88rem;
-    --line-height: 1.6;
-    
-    /* Spacing */
-    --spacing-xs: 0.25rem;
-    --spacing-sm: 0.5rem;
-    --spacing-md: 1rem;
-    --spacing-lg: 2rem;
-    
-    /* Layout */
-    --header-height: 70px;
-    --sidebar-width: 250px;
-    --border-radius: 8px;
-    --box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
+## Kiến Trúc Ứng Dụng Một Trang
 
-/* Dark mode variables */
-.dark-mode-variables {
-    --color-background: #1a1a1a;
-    --color-surface: #2d2d2d;
-    --color-text: #ffffff;
-}
-```
+### Cách Thức Hoạt Động
 
-#### **Component Styles:**
-```css
-/* Responsive components */
-.stock-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: var(--font-family);
-}
+Ứng dụng đã được nâng cấp để sử dụng kiến trúc ứng dụng một trang nhằm cải thiện trải nghiệm người dùng:
 
-.stock-table td.positive {
-    color: var(--color-success) !important;
-    font-weight: bold !important;
-}
+1. **Chặn Điều Hướng**: Khi nhấp vào thanh điều hướng, JavaScript sẽ chặn điều hướng mặc định
+2. **Yêu Cầu Bất Đồng Bộ**: Gửi yêu cầu bất đồng bộ tới điểm cuối giao diện lập trình ứng dụng tương ứng
+3. **Nội Dung Một Phần**: Nhận về nội dung HTML một phần thay vì toàn bộ trang
+4. **Cập Nhật Mô Hình Đối Tượng Tài Liệu**: Cập nhật chỉ phần nội dung chính (id="main") 
+5. **Quản Lý Lịch Sử**: Quản lý lịch sử trình duyệt để hỗ trợ nút quay lại/tiến tới
 
-.stock-table td.negative {
-    color: var(--color-danger) !important;
-    font-weight: bold !important;
-}
+### Lợi Ích của Ứng Dụng Một Trang
 
-/* Responsive breakpoints */
-@media (max-width: 768px) {
-    .stock-table {
-        font-size: 0.8rem;
-        overflow-x: auto;
-    }
-}
-```
+- **Tốc độ**: Chỉ tải nội dung cần thiết, không tải lại đầu trang/thanh bên
+- **Trải nghiệm**: Điều hướng mượt mà như ứng dụng gốc
+- **Băng thông**: Tiết kiệm băng thông do không tải lại tài sản
+- **Thân thiện với Tối Ưu Hóa Công Cụ Tìm Kiếm**: Vẫn hỗ trợ truy cập trực tiếp qua địa chỉ
 
-### **JavaScript Modules & Chart Integration**
+### Hệ Thống Mẫu
 
-#### **Chart Configuration - Plotly.js:**
-```javascript
-// stock.js - Interactive candlestick charts
-function createCandlestickChart(priceData) {
-    const trace = {
-        x: priceData.map(item => item.time),
-        close: priceData.map(item => item.close),
-        high: priceData.map(item => item.high),
-        low: priceData.map(item => item.low),
-        open: priceData.map(item => item.open),
-        type: 'candlestick',
-        name: 'Stock Price',
-        increasing: {line: {color: '#28a745'}},
-        decreasing: {line: {color: '#dc3545'}}
-    };
+Sử dụng Jinja2 với cấu trúc kế thừa và mẫu một phần:
 
-    const layout = {
-        title: 'Biểu đồ nến',
-        xaxis: {title: 'Thời gian'},
-        yaxis: {title: 'Giá (VND)'},
-        responsive: true,
-        displayModeBar: true
-    };
+- **base.html**: Mẫu chính chứa bố cục, đầu trang, thanh bên
+- **Mẫu trang**: Mở rộng base.html và bao gồm nội dung một phần  
+- **Mẫu một phần**: Chứa nội dung chính của từng trang cho ứng dụng một trang
 
-    Plotly.newPlot('stock-chart', [trace], layout, {responsive: true});
-}
-```
+## Kiến Trúc Giao Diện và Thành Phần Giao Diện Người Dùng
 
-#### **Real-time Data Updates:**
-```javascript
-// main.js - WebSocket integration
-function initWebSocket() {
-    const ws = new WebSocket('ws://localhost:8000/ws/stock-updates');
-    
-    ws.onmessage = function(event) {
-        const data = JSON.parse(event.data);
-        updateStockTable(data);
-        updateCharts(data);
-    };
-    
-    // Reconnect logic
-    ws.onclose = function() {
-        setTimeout(initWebSocket, 5000);
-    };
-}
-```
+### Hệ Thống Mẫu - Kế Thừa Jinja2
 
-## 📊 Data Flow & API Integration
+Hệ thống mẫu được tổ chức theo cấu trúc kế thừa với base.html là mẫu chính chứa bố cục chung. Các mẫu con mở rộng base.html và ghi đè các khối cụ thể cho từng trang.
 
-### **Frontend Data Flow:**
+### Kiến Trúc CSS - Hệ Thống Thiết Kế
 
-```mermaid
-graph LR
-    A[User Interaction] --> B[JavaScript Event]
-    B --> C[API Call fetch/axios]
-    C --> D[FastAPI Endpoint]
-    D --> E{Cache Check}
-    E -->|Hit| F[Return Cached Data]
-    E -->|Miss| G[VNStock API Call]
-    G --> H[Process & Cache Data]
-    H --> I[Return JSON Response]
-    F --> I
-    I --> J[Update DOM]
-    J --> K[Render Charts]
-    K --> L[Update UI]
-```
+**Biến CSS (Mã Thông Báo Thiết Kế)**: Quản lý màu sắc, kiểu chữ, khoảng cách và bố cục thống nhất
 
-### **API Endpoints cho Frontend:**
+**Hỗ Trợ Chế Độ Tối**: Thông qua biến CSS với chế độ sáng làm mặc định
 
-#### **Stock Data APIs:**
-```javascript
-// API calls từ frontend
-const stockAPI = {
-    // Lấy thông tin cổ phiếu
-    async getStockInfo(symbol) {
-        const response = await fetch(`/api/stock/${symbol}/profile`);
-        return await response.json();
-    },
-    
-    // Lấy dữ liệu giá
-    async getPriceData(symbol) {
-        const response = await fetch(`/api/stock/${symbol}/price`);
-        return await response.json();
-    },
-    
-    // Lấy dữ liệu chart
-    async getChartData(bankId) {
-        const response = await fetch(`/api/financial/chart-data/${bankId}`);
-        return await response.json();
-    }
-};
-```
+**Thiết Kế Đáp Ứng**: Phương pháp ưu tiên thiết bị di động với các điểm ngắt được tối ưu
 
-#### **Response Data Structure:**
-```javascript
-// Ví dụ response structure
-{
-    "success": true,
-    "data": {
-        "symbol": "VCB",
-        "price": 85500,
-        "change": 1500,
-        "percent_change": 1.78,
-        "volume": 2150000,
-        "market_cap": 425000000000,
-        "pe_ratio": 12.5
-    },
-    "cached": true,
-    "timestamp": "2024-12-20T10:30:00"
-}
-```
+### Các Mô-đun JavaScript và Tích Hợp Biểu Đồ
 
-## ⚡ Performance Optimization cho Frontend
+**Tích Hợp Plotly.js**: Biểu đồ nến tương tác với thu phóng, di chuyển, công cụ vẽ
 
-### **Current Performance Metrics:**
+**WebSocket Trực Tuyến**: Cập nhật dữ liệu chứng khoán trực tuyến với tự động kết nối lại
 
-| Metric | Desktop | Mobile | Target | Status |
+**Khởi Tạo Thành Phần**: Khởi tạo lại cho từng trang khi điều hướng ứng dụng một trang
+
+## Luồng Dữ Liệu và Tích Hợp Giao Diện Lập Trình Ứng Dụng
+
+### Luồng Dữ Liệu Giao Diện
+
+Tương Tác Người Dùng → Sự Kiện JavaScript → Gọi Giao Diện Lập Trình → Điểm Cuối FastAPI → Kiểm Tra Bộ Nhớ Đệm → Trả Về Dữ Liệu → Cập Nhật Mô Hình Đối Tượng Tài Liệu → Vẽ Biểu Đồ → Cập Nhật Giao Diện Người Dùng
+
+### Chiến Lược Bộ Nhớ Đệm
+
+**Bộ Nhớ Đệm Redis**: Chiến lược thời gian sống khác nhau cho từng loại dữ liệu
+
+**Bộ Nhớ Đệm Trình Duyệt**: Tài sản tĩnh và tùy chọn người dùng
+
+**Lưu Trữ Cục Bộ**: Cài đặt người dùng và tùy chọn chủ đề
+
+## Tối Ưu Hóa Hiệu Suất
+
+### Các Chỉ Số Hiệu Suất Hiện Tại
+
+| Chỉ Số | Máy Tính Để Bàn | Di Động | Mục Tiêu | Trạng Thái |
 |--------|---------|--------|--------|--------|
-| **First Contentful Paint** | 1.2s | 2.1s | <2.5s | ✅ |
-| **Largest Contentful Paint** | 1.8s | 2.8s | <3.0s | ✅ |
-| **Cumulative Layout Shift** | 0.05 | 0.08 | <0.1 | ✅ |
-| **Time to Interactive** | 2.1s | 3.2s | <3.5s | ✅ |
+| Vẽ Nội Dung Đầu Tiên | 1.2 giây | 2.1 giây | dưới 2.5 giây | Đạt |
+| Vẽ Nội Dung Lớn Nhất | 1.8 giây | 2.8 giây | dưới 3.0 giây | Đạt |
+| Thay Đổi Bố Cục Tích Lũy | 0.05 | 0.08 | dưới 0.1 | Đạt |
+| Thời Gian Tương Tác | 2.1 giây | 3.2 giây | dưới 3.5 giây | Đạt |
 
-### **Optimization Techniques Implemented:**
+### Kỹ Thuật Tối Ưu Hóa
 
-#### **1. Asset Optimization:**
-```html
-<!-- CSS optimization -->
-<link rel="preload" href="/static/css/style.css" as="style">
-<link rel="stylesheet" href="/static/css/style.min.css?v=2.1">
+**Tối Ưu Hóa Tài Sản**: Tải trước, tải lười, và nén
 
-<!-- JavaScript lazy loading -->
-<script>
-const loadChart = async () => {
-    const { Chart } = await import('./charts.js');
-    return new Chart();
-};
-</script>
+**Chia Tách Mã**: Nhập động cho các thành phần nặng
 
-<!-- Image optimization -->
-<img src="/static/images/chart.webp" loading="lazy" alt="Stock Chart">
-```
+**Tải Lười**: Quan sát giao điểm cho biểu đồ và hình ảnh
 
-#### **2. Caching Strategy:**
-```javascript
-// Service Worker cho offline capability
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/static/js/sw.js');
-}
+**Chiến Lược Bộ Nhớ Đệm**: Bộ nhớ đệm đa lớp từ trình duyệt đến Redis
 
-// Local Storage cho user preferences
-const themeManager = {
-    setTheme(theme) {
-        localStorage.setItem('theme', theme);
-        document.body.className = theme;
-    },
-    
-    getTheme() {
-        return localStorage.getItem('theme') || 'light';
-    }
-};
-```
+## Thiết Kế Đáp Ứng và Tối Ưu Hóa Di Động
 
-#### **3. Code Splitting & Lazy Loading:**
-```javascript
-// Dynamic imports cho heavy components
-const loadPriceboard = async () => {
-    const module = await import('./priceboard.js');
-    return module.initPriceboard();
-};
+### Chiến Lược Điểm Ngắt
 
-// Intersection Observer cho lazy loading
-const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            loadChartComponent(entry.target);
-        }
-    });
-});
-```
+**Phương Pháp Ưu Tiên Di Động** với các điểm ngắt:
+- Kiểu cơ sở: Di động (320px+)
+- Máy tính bảng: 768px+ 
+- Máy tính để bàn: 1024px+
 
-## 📱 Responsive Design & Mobile Optimization
+### Giao Diện Người Dùng Thân Thiện với Cảm Ứng
 
-### **Breakpoint Strategy:**
-```css
-/* Mobile First Approach */
-/* Base styles - Mobile (320px+) */
-.container {
-    padding: var(--spacing-sm);
-    max-width: 100%;
-}
+**Mục Tiêu Cảm Ứng**: Tối thiểu 44px cho tương tác di động
 
-/* Tablet (768px+) */
-@media (min-width: 768px) {
-    .container {
-        padding: var(--spacing-md);
-        max-width: 750px;
-    }
-    
-    .sidebar {
-        display: block;
-    }
-}
+**Cuộn Mượt**: Được tối ưu cho thiết bị di động
 
-/* Desktop (1024px+) */
-@media (min-width: 1024px) {
-    .container {
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-    
-    .stock-table {
-        font-size: 1rem;
-    }
-}
-```
+**Bảng Đáp Ứng**: Cuộn ngang với chỉ báo cảm ứng
 
-### **Touch-Friendly UI:**
-```css
-/* Touch targets >= 44px */
-.btn {
-    min-height: 44px;
-    min-width: 44px;
-    padding: 12px 24px;
-    border-radius: var(--border-radius);
-    touch-action: manipulation;
-}
+## Xử Lý Lỗi và Trải Nghiệm Người Dùng
 
-/* Smooth scrolling */
-.stock-table-container {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-}
-```
+### Xử Lý Lỗi Giao Diện Lập Trình Ứng Dụng
 
-## 🎨 Dark Mode Implementation
+**Trình Xử Lý Lỗi Toàn Cục**: Xử lý tất cả cuộc gọi giao diện lập trình với cơ chế dự phòng
 
-### **CSS Variables Approach:**
-```css
-/* Light mode (default) */
-:root {
-    --bg-primary: #ffffff;
-    --text-primary: #333333;
-    --border-color: #e0e0e0;
-}
+**Thông Báo Thân Thiện với Người Dùng**: Thông báo lỗi bằng tiếng Việt
 
-/* Dark mode */
-.dark-mode-variables {
-    --bg-primary: #1a1a1a;
-    --text-primary: #ffffff;
-    --border-color: #404040;
-}
+**Suy Giảm Duyên Dáng**: Dự phòng tải lại toàn trang khi ứng dụng một trang thất bại
 
-/* Components automatically adapt */
-.card {
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
-}
-```
+### Trạng Thái Tải
 
-### **JavaScript Toggle:**
-```javascript
-// Dark mode toggle
-const darkModeToggle = {
-    init() {
-        const toggle = document.getElementById('dark-mode-toggle');
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        
-        this.setTheme(savedTheme);
-        
-        toggle.addEventListener('click', () => {
-            const currentTheme = document.body.classList.contains('dark-mode-variables') 
-                ? 'light' : 'dark';
-            this.setTheme(currentTheme);
-        });
-    },
-    
-    setTheme(theme) {
-        document.body.className = theme === 'dark' ? 'dark-mode-variables' : '';
-        localStorage.setItem('theme', theme);
-    }
-};
-```
+**Chỉ Báo Tải**: Vòng quay và màn hình khung xương
 
-## 🚨 Error Handling & User Experience
+**Tải Tiến Bộ**: Hiển thị nội dung theo từng phần
 
-### **API Error Handling:**
-```javascript
-// Global error handler
-async function apiCall(url, options = {}) {
-    try {
-        const response = await fetch(url, {
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers
-            },
-            ...options
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        return await response.json();
-    } catch (error) {
-        console.error('API Error:', error);
-        showNotification('Lỗi khi tải dữ liệu. Vui lòng thử lại.', 'error');
-        return null;
-    }
-}
-```
+**Khôi Phục Lỗi**: Cơ chế thử lại và tùy chọn làm mới thủ công
 
-### **Loading States:**
-```javascript
-// Loading indicator
-function showLoading(element) {
-    element.innerHTML = `
-        <div class="loading-spinner">
-            <div class="spinner"></div>
-            <span>Đang tải dữ liệu...</span>
-        </div>
-    `;
-}
+## Các Tính Năng Chính
 
-function hideLoading(element) {
-    element.classList.remove('loading');
-}
-```
+### Cập Nhật Dữ Liệu Trực Tuyến
 
-## 🔧 Development Tools & Debugging
+**Kết Nối WebSocket**: Cập nhật dữ liệu chứng khoán trực tuyến
 
-### **Browser DevTools Setup:**
-```javascript
-// Development helpers
-if (process.env.NODE_ENV === 'development') {
-    // Performance monitoring
-    const observer = new PerformanceObserver((list) => {
-        list.getEntries().forEach((entry) => {
-            console.log(`${entry.name}: ${entry.duration}ms`);
-        });
-    });
-    observer.observe({entryTypes: ['measure']});
-    
-    // API call logging
-    window.apiLogger = true;
-}
-```
+**Kết Nối Lại Tự Động**: Xử lý ngắt kết nối
 
-### **Performance Testing:**
-```javascript
-// Frontend performance testing
-const performanceTest = {
-    measurePageLoad() {
-        window.addEventListener('load', () => {
-            const perfData = performance.timing;
-            const pageLoadTime = perfData.loadEventEnd - perfData.navigationStart;
-            console.log(`Page Load Time: ${pageLoadTime}ms`);
-        });
-    },
-    
-    measureAPICall(name, apiPromise) {
-        const start = performance.now();
-        return apiPromise.then(result => {
-            const end = performance.now();
-            console.log(`${name}: ${(end - start).toFixed(2)}ms`);
-            return result;
-        });
-    }
-};
-```
+**Đồng Bộ Dữ Liệu**: Đồng bộ dữ liệu giữa các thành phần
 
-## 📈 Future Frontend Roadmap
+### Biểu Đồ Tương Tác
 
-### **Kế Hoạch Ngắn Hạn (1-2 tháng):**
-- [ ] **Progressive Web App (PWA)** - Offline capability
-- [ ] **Component Library** - Reusable UI components
-- [ ] **TypeScript Migration** - Better type safety
-- [ ] **Webpack/Vite Setup** - Modern build pipeline
+**Biểu Đồ Plotly.js**: Nến với công cụ nâng cao
 
-### **Kế Hoạch Trung Hạn (3-6 tháng):**
-- [ ] **React/Vue Migration** - Modern frontend framework
-- [ ] **Real-time Notifications** - WebSocket notifications
-- [ ] **Advanced Charts** - TradingView charts integration
-- [ ] **Micro-frontends** - Modular architecture
+**Tích Hợp Chart.js**: Biểu đồ đơn giản và trực quan hóa dữ liệu
 
-### **Kế Hoạch Dài Hạn (6+ tháng):**
-- [ ] **Mobile App** - React Native/Flutter
-- [ ] **Desktop App** - Electron wrapper
-- [ ] **AI-powered Features** - Smart alerts & predictions
-- [ ] **Multi-language** - i18n support
+**Biểu Đồ Đáp Ứng**: Tự động thay đổi kích thước theo màn hình
 
-## 🛠️ Troubleshooting cho Frontend Developers
+### Tích Hợp Dữ Liệu Tài Chính
 
-### **Common Issues:**
+**Giao Diện Lập Trình Ứng Dụng VNStock**: Dữ liệu chứng khoán Việt Nam
 
-#### **1. Charts không hiển thị:**
-```javascript
-// Kiểm tra Plotly.js loaded
-if (typeof Plotly === 'undefined') {
-    console.error('Plotly.js chưa được load');
-    // Load Plotly dynamically
-    await import('https://cdn.plot.ly/plotly-latest.min.js');
-}
+**Báo Cáo Tài Chính**: Báo cáo tài chính chi tiết
 
-// Kiểm tra data format
-if (!Array.isArray(chartData) || chartData.length === 0) {
-    console.error('Chart data không hợp lệ:', chartData);
-    return;
-}
-```
+**Thông Tin Công Ty**: Hồ sơ công ty và ban lãnh đạo
 
-#### **2. API calls bị timeout:**
-```javascript
-// Timeout wrapper
-function timeoutPromise(promise, ms = 10000) {
-    return Promise.race([
-        promise,
-        new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Request timeout')), ms)
-        )
-    ]);
-}
+### Tích Hợp PowerBI
 
-// Usage
-const data = await timeoutPromise(
-    fetch('/api/stock/VCB/price'),
-    10000
-);
-```
+**Khung Nội Tuyến Nhúng**: Báo cáo PowerBI trong ứng dụng
 
-#### **3. CSS không load đúng:**
-```html
-<!-- Force reload CSS in development -->
-<link rel="stylesheet" href="/static/css/style.css?v={{ timestamp }}">
+**Bảng Điều Khiển Chỉ Số Hiệu Suất Chính**: Các chỉ số đánh giá quan trọng
 
-<!-- Check CSS loading -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const style = getComputedStyle(document.body);
-    if (style.fontFamily.indexOf('Segoe UI') === -1) {
-        console.warn('CSS chưa load đúng');
-    }
-});
-</script>
-```
+**Trí Tuệ Kinh Doanh**: Phân tích nâng cao và thông tin chi tiết
 
-## 📚 Resources & Documentation
+## Hỗ Trợ Trình Duyệt
 
-### **Frontend Libraries Used:**
-- **Plotly.js 5.17.0** - Interactive charts
-- **Chart.js 4.x** - Simple charts
-- **Vanilla JavaScript** - No framework overhead
-- **CSS Grid & Flexbox** - Modern layouts
+Hỗ trợ các trình duyệt hiện đại:
 
-### **Design Resources:**
-- **Color Palette**: Material Design inspired
-- **Typography**: System fonts (Segoe UI, San Francisco)
-- **Icons**: SVG icons với proper accessibility
-- **Animations**: CSS transitions & transforms
+- Chrome 90+
+- Firefox 88+  
+- Safari 14+
+- Edge 90+
+- iOS Safari 14+
+- Chrome Mobile 90+
 
-### **Browser Support:**
-- ✅ Chrome 90+
-- ✅ Firefox 88+
-- ✅ Safari 14+
-- ✅ Edge 90+
-- 📱 iOS Safari 14+
-- 📱 Chrome Mobile 90+
+## Khắc Phục Sự Cố
+
+### Các Lỗi Thường Gặp
+
+**Biểu đồ không hiển thị**
+- Kiểm tra Plotly.js đã tải
+- Xác minh định dạng dữ liệu đúng
+- Kiểm tra lỗi bảng điều khiển
+
+**Cuộc gọi giao diện lập trình bị hết thời gian chờ**  
+- Kiểm tra máy chủ đang chạy
+- Xác minh kết nối mạng
+- Kiểm tra kết nối Redis
+
+**CSS không tải đúng**
+- Xóa bộ nhớ đệm trình duyệt
+- Kiểm tra đường dẫn tập tin
+- Xác minh phục vụ tập tin tĩnh
+
+**Vấn đề kết nối WebSocket**
+- Kiểm tra điểm cuối WebSocket máy chủ
+- Kiểm tra cài đặt tường lửa
+- Xác minh khả năng truy cập cổng
+
+### Vấn đề Hiệu Suất
+
+**Tải trang chậm**
+- Kiểm tra trạng thái bộ nhớ đệm
+- Tối ưu kích thước hình ảnh  
+- Giảm gói JavaScript
+
+**Rò rỉ bộ nhớ**
+- Dọn dẹp trình nghe sự kiện
+- Đóng kết nối WebSocket
+- Xóa các thể hiện biểu đồ không sử dụng
+
+**Hiệu suất di động**
+- Tối ưu tương tác cảm ứng
+- Giảm độ phức tạp hoạt ảnh
+- Nén tài sản
+
+## Kế Hoạch Phát Triển Tương Lai
+
+### Ngắn Hạn (1-2 tháng)
+
+**Ứng Dụng Web Tiến Bộ**: Khả năng ngoại tuyến và trải nghiệm giống ứng dụng
+
+**Thư Viện Thành Phần**: Thành phần giao diện người dùng có thể tái sử dụng cho tính nhất quán
+
+**Chuyển Đổi TypeScript**: Độ an toàn kiểu tốt hơn và trải nghiệm nhà phát triển
+
+**Đường Ống Xây Dựng**: Công cụ hiện đại với Webpack/Vite
+
+### Trung Hạn (3-6 tháng)
+
+**Khung Hiện Đại**: Chuyển đổi sang React/Vue cho khả năng bảo trì tốt hơn
+
+**Thông Báo Thời Gian Thực**: Hệ thống thông báo dựa trên WebSocket
+
+**Biểu Đồ Nâng Cao**: Tích hợp biểu đồ TradingView
+
+**Vi Giao Diện**: Kiến trúc mô-đun cho khả năng mở rộng
+
+### Dài Hạn (6+ tháng)
+
+**Ứng Dụng Di Động**: React Native/Flutter cho trải nghiệm gốc
+
+**Ứng Dụng Máy Tính Để Bàn**: Trình bao bọc Electron cho người dùng máy tính để bàn
+
+**Tính Năng Trí Tuệ Nhân Tạo**: Cảnh báo thông minh và phân tích dự đoán
+
+**Quốc Tế Hóa**: Hỗ trợ đa ngôn ngữ
+
+## Thông Tin Liên Hệ và Hỗ Trợ
+
+**Phát triển bởi**: Nhóm Bảng Điều Khiển Tài Chính  
+**Phiên bản**: 1.2.0  
+**Cập nhật cuối**: Tháng 12, 2024
+
+### Mục Tiêu Hiệu Suất
+
+- Vẽ Đầu Tiên: dưới 1.5 giây
+- Tương Tác: dưới 2.5 giây  
+- Điểm Di Động: trên 90
+- Điểm Khả Năng Truy Cập: trên 95
+
+### Hỗ Trợ Kỹ Thuật
+
+**Vấn Đề GitHub**: Báo cáo lỗi và yêu cầu tính năng
+
+**Wiki Tài Liệu**: Chi tiết triển khai và kiến trúc
+
+**Hệ Thống Thiết Kế**: Hướng dẫn thành phần giao diện người dùng và thực hành tốt nhất
 
 ---
 
-## 📞 Support & Contact
-
-**Phát triển bởi**: Financial Dashboard Team  
-**Phiên bản**: 1.2.0  
-**Cập nhật**: Tháng 12, 2024  
-
-**Frontend Performance Target**:
-- ⚡ First Paint < 1.5s
-- 📊 Interactive < 2.5s  
-- 📱 Mobile Score > 90
-- ♿ Accessibility Score > 95
-
-**Liên hệ hỗ trợ**:
-- 💬 GitHub Issues: [Báo cáo lỗi frontend](https://github.com/your-repo/issues)
-- 📖 Frontend Docs: [Chi tiết implementation](https://github.com/your-repo/wiki)
-- 🎨 Design System: [UI Components guide](https://github.com/your-repo/design-system) 
+*Lưu ý: Tập tin README này tập trung vào mô tả tính năng và kiến trúc thay vì ví dụ mã để dễ đọc và bảo trì.* 

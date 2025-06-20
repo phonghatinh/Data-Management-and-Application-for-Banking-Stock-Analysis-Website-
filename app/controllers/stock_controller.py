@@ -14,8 +14,8 @@ symbols = [
 ]
 
 @router.get("/stock", response_class=HTMLResponse)
-async def get_stock(request: Request, bank_code: str = "VCB") -> HTMLResponse:
-    return await get_home(request, bank_code)
+# async def get_stock(request: Request, bank_code: str = "VCB") -> HTMLResponse:
+#     return await get_home(request, bank_code)
 
 async def get_home(request: Request, bank_code: str = "VCB") -> HTMLResponse:
     model = StockModel(bank_code)
