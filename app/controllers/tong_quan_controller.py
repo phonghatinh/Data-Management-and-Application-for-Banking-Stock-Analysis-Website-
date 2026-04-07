@@ -136,7 +136,7 @@ async def get_market_cap_data_api(
             max_stock_id=max_stock_id
         )
         
-        # Cache for 15 minutes
+        
         await cache_manager_instance.set(
             cache_key, 
             data, 
@@ -261,41 +261,43 @@ async def get_batch_dashboard_data():
         logger.exception(f"Unexpected error in batch dashboard data: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error while fetching batch data: {str(e)}")
 
-# --- WebSocket Stock Updates ---
+
+# --- WebSocket Stock Updates giữ nguyên ---
 def setup_stock_websocket_routes(app: FastAPI):
     stock_model = StockModel()
+
     @app.websocket("/ws/stock-updates")
     async def websocket_stock_endpoint(websocket: WebSocket):
         await websocket.accept()
         client_host = websocket.client.host if websocket.client else "unknown"
         client_port = websocket.client.port if websocket.client else "unknown"
         logger.info(f"WebSocket connection accepted from {client_host}:{client_port}")
+
+        last_data = None  # ✅ Dữ liệu lần trước
+
         try:
             while True:
-                if not (websocket.application_state == WebSocketState.CONNECTED and \
+                if not (websocket.application_state == WebSocketState.CONNECTED and
                         websocket.client_state == WebSocketState.CONNECTED):
                     logger.info(f"WebSocket no longer connected for {client_host}:{client_port}. Breaking send loop.")
                     break
+
                 data = await stock_model.fetch_stock_data()
+
                 if data is None:
                     logger.warning(f"StockModel returned None for {client_host}:{client_port}. Sending keep-alive or error.")
-                    interval = getattr(settings, 'WEBSOCKET_STOCK_INTERVAL_SECONDS', 10)
-                    await asyncio.sleep(interval)
-                    continue
-                if websocket.application_state == WebSocketState.CONNECTED and \
-                   websocket.client_state == WebSocketState.CONNECTED:
-                    if isinstance(data, dict) and "error" in data:
-                        logger.warning(f"Error fetching stock data from model: {data['error']}. Sending to client {client_host}:{client_port}.")
-                        await websocket.send_json(data)
-                    elif isinstance(data, list) and not data:
-                        logger.info(f"StockModel returned empty list for {client_host}:{client_port}. Nothing to send.")
-                    else:
-                        await websocket.send_json(data)
+                elif isinstance(data, dict) and "error" in data:
+                    logger.warning(f"Error fetching stock data from model: {data['error']}. Sending to client {client_host}:{client_port}.")
+                    await websocket.send_json(data)
+                elif data != last_data:
+                    await websocket.send_json(data)
+                    last_data = data  # ✅ Cập nhật sau khi gửi
                 else:
-                    logger.info(f"WebSocket disconnected before sending data to {client_host}:{client_port}. Breaking loop.")
-                    break
+                    logger.debug(f"No change in stock data for {client_host}:{client_port}, not sending.")
+
                 interval = getattr(settings, 'WEBSOCKET_STOCK_INTERVAL_SECONDS', 10)
                 await asyncio.sleep(interval)
+
         except WebSocketDisconnect as e:
             logger.info(f"WebSocket disconnected by client {client_host}:{client_port}. Code: {e.code}. Reason: {e.reason}")
         except asyncio.CancelledError:
@@ -320,3 +322,4 @@ def setup_stock_websocket_routes(app: FastAPI):
                     logger.error(f"Error during WebSocket close for {client_host}:{client_port}: {close_error}", exc_info=True)
             else:
                 logger.info(f"WebSocket for {client_host}:{client_port} was already in DISCONNECTED state.")
+
